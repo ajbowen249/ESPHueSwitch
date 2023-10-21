@@ -34,6 +34,10 @@ void setup() {
         Serial.println("connected wifi");
     }
 
+    Serial.println("about to start AP...");
+    wifiController->StartAccessPoint();
+    Serial.println("started access point");
+
     configurationServer.start();
     Serial.println("started server");
 }

@@ -3,6 +3,9 @@
 
 #define HOSTNAME "HueSwitch"
 
+#define AP_NAME "HueSwitch"
+#define AP_PASS "admin1234"
+
 EHS::WiFiControllerImpl::WiFiControllerImpl()
     : _status({false, WL_IDLE_STATUS}), _wifiSettings({"", ""}), _useAccessPoint(false), _connectWiFi(false),
       _shouldReconnect(false) {}
@@ -39,7 +42,15 @@ bool EHS::WiFiControllerImpl::ConnectWiFi(wl_status_t& result, unsigned long tim
     return _status.isConnected;
 }
 
-void EHS::WiFiControllerImpl::StartAccessPoint() {}
+void EHS::WiFiControllerImpl::StartAccessPoint() {
+    _useAccessPoint = true;
+    applySettings();
+    IPAddress local_IP(192, 168, 4, 1);
+    IPAddress gateway(192, 168, 4, 9);
+    IPAddress subnet(255, 255, 255, 0);
+
+    WiFi.softAP(AP_NAME, AP_PASS);
+}
 
 void EHS::WiFiControllerImpl::applySettings() {
     if (_useAccessPoint && _connectWiFi) {
