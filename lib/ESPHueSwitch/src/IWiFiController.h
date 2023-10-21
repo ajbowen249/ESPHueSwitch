@@ -22,7 +22,10 @@ class IWiFiController {
 
     virtual const WiFiSettings& getWiFiSettings() const;
     virtual void setWiFiSettings(const WiFiSettings& settings);
+    virtual void flagReconnect();
 
     virtual const WiFiStatus& getWiFiStatus() const;
+
+    virtual void loop();
 };
 } // namespace EHS

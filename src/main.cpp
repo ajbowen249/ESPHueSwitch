@@ -39,5 +39,6 @@ void setup() {
 }
 
 void loop() {
+    supportObjects.getWiFiController()->loop();
     yield();
 }

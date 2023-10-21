@@ -4,7 +4,8 @@
 #define HOSTNAME "HueSwitch"
 
 EHS::WiFiControllerImpl::WiFiControllerImpl()
-    : _status({false, WL_IDLE_STATUS}), _wifiSettings({"", ""}), _useAccessPoint(false), _connectWiFi(false) {}
+    : _status({false, WL_IDLE_STATUS}), _wifiSettings({"", ""}), _useAccessPoint(false), _connectWiFi(false),
+      _shouldReconnect(false) {}
 
 const EHS::WiFiSettings& EHS::WiFiControllerImpl::getWiFiSettings() const { return _wifiSettings; }
 
@@ -13,9 +14,7 @@ void EHS::WiFiControllerImpl::setWiFiSettings(const EHS::WiFiSettings& settings)
     _wifiSettings.password = settings.password;
 }
 
-const EHS::WiFiStatus& EHS::WiFiControllerImpl::getWiFiStatus() const {
-    return _status;
-}
+const EHS::WiFiStatus& EHS::WiFiControllerImpl::getWiFiStatus() const { return _status; }
 
 bool EHS::WiFiControllerImpl::ConnectWiFi(wl_status_t& result, unsigned long timeoutLength) {
     if (_wifiSettings.ssid != "" && _wifiSettings.password != "") {
@@ -52,4 +51,16 @@ void EHS::WiFiControllerImpl::applySettings() {
     }
 
     WiFi.hostname(HOSTNAME);
+}
+
+void EHS::WiFiControllerImpl::flagReconnect() {
+    _shouldReconnect = true;
+}
+
+void EHS::WiFiControllerImpl::loop() {
+    if (_shouldReconnect) {
+        wl_status_t result;
+        ConnectWiFi(result, 60000UL);
+        _shouldReconnect = false;
+    }
 }
