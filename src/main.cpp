@@ -3,38 +3,11 @@
 
 #include "ESPHueSwitch.h"
 
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");           // access at ws://[esp ip]/ws
-AsyncEventSource events("/events"); // event source (Server-Sent events)
-
 #define DEFAULT_WIFI_SSID "Hanshotfirst (2G)"
 #define DEFAULT_WIFI_PASSWORD "12Parsecs"
 
-const char *http_username = "admin";
-const char *http_password = "admin";
-
-// flag to use from web update to reboot the ESP
-bool shouldReboot = false;
-
-void onRequest(AsyncWebServerRequest *request) {
-    // Handle Unknown Request
-    request->send(404);
-}
-
-void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len,
-            size_t index, size_t total) {
-    // Handle body
-}
-
-void onUpload(AsyncWebServerRequest *request, String filename, size_t index,
-              uint8_t *data, size_t len, bool final) {
-    // Handle upload
-}
-
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
-             AwsEventType type, void *arg, uint8_t *data, size_t len) {
-    // Handle WebSocket event
-}
+EHS::SupportObjectBundleImpl supportObjects;
+EHS::ConfigurationServer configurationServer(&supportObjects);
 
 void setup() {
     Serial.begin(115200);
@@ -45,10 +18,9 @@ void setup() {
     Serial.println("start delay complete");
     Serial.println("about to init controller");
 
-    EHS::WiFiControllerImpl controller;
-    Serial.println("created controller");
+    const auto wifiController = supportObjects.getWiFiController();
 
-    controller.setWiFiSettings({
+    wifiController->setWiFiSettings({
         DEFAULT_WIFI_SSID,
         DEFAULT_WIFI_PASSWORD,
     });
@@ -56,103 +28,17 @@ void setup() {
     Serial.println("set up wifi settings");
 
     wl_status_t result;
-    if (!controller.ConnectWiFi(result, 60000UL)) {
+    if (!wifiController->ConnectWiFi(result, 60000UL)) {
         Serial.printf("WiFi Failed!\n");
         return;
     }
 
     Serial.println("connected");
 
-    // attach AsyncWebSocket
-    ws.onEvent(onEvent);
-    server.addHandler(&ws);
-
-    // attach AsyncEventSource
-    server.addHandler(&events);
-
-    // respond to GET requests on URL /heap
-    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "text/plain", String(ESP.getFreeHeap()));
-    });
-
-    // upload a file to /upload
-    server.on(
-        "/upload", HTTP_POST,
-        [](AsyncWebServerRequest *request) { request->send(200); }, onUpload);
-
-    // send a file when /index is requested
-    server.on("/index", HTTP_ANY, [](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response =
-            request->beginResponse(200, "text/html", "<html><head><title>Hue Switch Configurator</title></head><body>Hello!<br /><button>Button</button></body></html>");
-        response->addHeader("Server", "ESP Async Web Server");
-        request->send(response);
-    });
-
-    // HTTP basic authentication
-    server.on("/login", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (!request->authenticate(http_username, http_password))
-            return request->requestAuthentication();
-        request->send(200, "text/plain", "Login Success!");
-    });
-
-    // Simple Firmware Update Form
-    server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(
-            200, "text/html",
-            "<form method='POST' action='/update' "
-            "enctype='multipart/form-data'><input type='file' "
-            "name='update'><input type='submit' value='Update'></form>");
-    });
-    server.on(
-        "/update", HTTP_POST,
-        [](AsyncWebServerRequest *request) {
-            shouldReboot = !Update.hasError();
-            AsyncWebServerResponse *response = request->beginResponse(
-                200, "text/plain", shouldReboot ? "OK" : "FAIL");
-            response->addHeader("Connection", "close");
-            request->send(response);
-        },
-        [](AsyncWebServerRequest *request, String filename, size_t index,
-           uint8_t *data, size_t len, bool final) {
-            if (!index) {
-                Serial.printf("Update Start: %s\n", filename.c_str());
-                Update.runAsync(true);
-                if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) &
-                                  0xFFFFF000)) {
-                    Update.printError(Serial);
-                }
-            }
-            if (!Update.hasError()) {
-                if (Update.write(data, len) != len) {
-                    Update.printError(Serial);
-                }
-            }
-            if (final) {
-                if (Update.end(true)) {
-                    Serial.printf("Update Success: %uB\n", index + len);
-                } else {
-                    Update.printError(Serial);
-                }
-            }
-        });
-
-    // Catch-All Handlers
-    // Any request that can not find a Handler that canHandle it
-    // ends in the callbacks below.
-    server.onNotFound(onRequest);
-    server.onFileUpload(onUpload);
-    server.onRequestBody(onBody);
-
-    server.begin();
+    configurationServer.start();
+    Serial.println("started server");
 }
 
 void loop() {
-    if (shouldReboot) {
-        Serial.println("Rebooting...");
-        delay(100);
-        ESP.restart();
-    }
-    static char temp[128];
-    sprintf(temp, "Seconds since boot: %u", millis() / 1000);
-    events.send(temp, "time"); // send event "time"
+    yield();
 }
