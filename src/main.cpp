@@ -30,10 +30,9 @@ void setup() {
     wl_status_t result;
     if (!wifiController->ConnectWiFi(result, 60000UL)) {
         Serial.printf("WiFi Failed!\n");
-        return;
+    } else {
+        Serial.println("connected wifi");
     }
-
-    Serial.println("connected");
 
     configurationServer.start();
     Serial.println("started server");

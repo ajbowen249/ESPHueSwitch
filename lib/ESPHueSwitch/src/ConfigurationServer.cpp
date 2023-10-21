@@ -11,7 +11,11 @@ const char* index_html = R"""(
     </head>
     <body>
         <h1>Hue Switch Config</h1>
-        WiFi Credentials:<br />
+
+        <h2>WiFi</h2>
+        SSID: %s<br />
+        Status: %s<br /><br />
+        Set WiFi Credentials:<br />
         <label for="ssid">SSID: </label>
         <input id="ssid" type="text" /><br />
 
@@ -23,6 +27,9 @@ const char* index_html = R"""(
 </html>
 )""";
 
+#define RESPONSE_BUFFER_SIZE 2048
+char response_buffer[RESPONSE_BUFFER_SIZE];
+
 void onUnhandledRequest(AsyncWebServerRequest* request) { request->send(404); }
 
 EHS::ConfigurationServer::ConfigurationServer(EHS::ISupportObjectBundle* supportObjects)
@@ -31,8 +38,23 @@ EHS::ConfigurationServer::ConfigurationServer(EHS::ISupportObjectBundle* support
 void EHS::ConfigurationServer::start() {
     _server.reset();
 
-    _server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", index_html);
+    const auto wifiController = _supportObjects->getWiFiController();
+
+    _server.on("/", HTTP_GET, [=](AsyncWebServerRequest* request) {
+        const auto wifiStatus = wifiController->getWiFiStatus();
+        const auto wifiSettings = wifiController->getWiFiSettings();
+
+        snprintf(
+            response_buffer, RESPONSE_BUFFER_SIZE, index_html,
+            wifiSettings.ssid.c_str(),
+            wifiStatus.isConnected ? "Connected" : "Not Connected"
+        );
+
+        AsyncWebServerResponse* response = request->beginResponse(
+            200,
+            "text/html",
+            response_buffer
+        );
         request->send(response);
     });
 

@@ -8,7 +8,7 @@ class SupportObjectBundleImpl : public ISupportObjectBundle {
   public:
     SupportObjectBundleImpl();
 
-    IWiFiController* getWiFiController();
+    virtual IWiFiController* getWiFiController() override;
 
   private:
     WiFiControllerImpl _wifiController;

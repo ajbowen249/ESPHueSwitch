@@ -3,19 +3,21 @@
 
 #define HOSTNAME "HueSwitch"
 
-EHS::WiFiControllerImpl::WiFiControllerImpl() : _wifiSettings({"", ""}), _useAccessPoint(false), _connectWiFi(false) {}
+EHS::WiFiControllerImpl::WiFiControllerImpl()
+    : _status({false, WL_IDLE_STATUS}), _wifiSettings({"", ""}), _useAccessPoint(false), _connectWiFi(false) {}
 
-const EHS::WiFiSettings EHS::WiFiControllerImpl::getWiFiSettings() const {
-    return _wifiSettings;
-}
+const EHS::WiFiSettings& EHS::WiFiControllerImpl::getWiFiSettings() const { return _wifiSettings; }
 
 void EHS::WiFiControllerImpl::setWiFiSettings(const EHS::WiFiSettings& settings) {
     _wifiSettings.ssid = settings.ssid;
     _wifiSettings.password = settings.password;
 }
 
-bool EHS::WiFiControllerImpl::ConnectWiFi(wl_status_t& result, unsigned long timeoutLength) {
+const EHS::WiFiStatus& EHS::WiFiControllerImpl::getWiFiStatus() const {
+    return _status;
+}
 
+bool EHS::WiFiControllerImpl::ConnectWiFi(wl_status_t& result, unsigned long timeoutLength) {
     if (_wifiSettings.ssid != "" && _wifiSettings.password != "") {
         _connectWiFi = true;
         applySettings();
@@ -23,16 +25,19 @@ bool EHS::WiFiControllerImpl::ConnectWiFi(wl_status_t& result, unsigned long tim
         WiFi.begin(_wifiSettings.ssid.c_str(), _wifiSettings.password.c_str());
         const auto connectResult = WiFi.waitForConnectResult(timeoutLength);
         if (connectResult == -1) {
-            result = WL_CONNECT_FAILED;
-            return false;
+            _status.lastResult = WL_CONNECT_FAILED;
+            _status.isConnected = false;
+        } else {
+            _status.lastResult = (wl_status_t)connectResult;
+            _status.isConnected = connectResult == WL_CONNECTED;
         }
-
-        result = (wl_status_t)connectResult;
-        return result == WL_CONNECTED;
+    } else {
+        _status.lastResult = WL_NO_SSID_AVAIL;
+        _status.isConnected = false;
     }
 
-    result = WL_NO_SSID_AVAIL;
-    return false;
+    result = _status.lastResult;
+    return _status.isConnected;
 }
 
 void EHS::WiFiControllerImpl::StartAccessPoint() {}
