@@ -1,13 +1,15 @@
 #include "ESPAsyncTCP.h"
 #include "ESPAsyncWebServer.h"
 
+#include "ESPHueSwitch.h"
+
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");           // access at ws://[esp ip]/ws
 AsyncEventSource events("/events"); // event source (Server-Sent events)
 
-const char *ssid = "Hanshotfirst (2G)";
-const char *password = "12Parsecs";
-const char* wifiHostname = "HueSwitch";
+#define DEFAULT_WIFI_SSID "Hanshotfirst (2G)"
+#define DEFAULT_WIFI_PASSWORD "12Parsecs"
+
 const char *http_username = "admin";
 const char *http_password = "admin";
 
@@ -36,13 +38,30 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
 
 void setup() {
     Serial.begin(115200);
-    WiFi.mode(WIFI_STA);
-    WiFi.hostname(wifiHostname);
-    WiFi.begin(ssid, password);
-    if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+
+    delay(1000);
+    Serial.println("start delay...");
+    delay(5000);
+    Serial.println("start delay complete");
+    Serial.println("about to init controller");
+
+    EHS::WiFiControllerImpl controller;
+    Serial.println("created controller");
+
+    controller.setWiFiSettings({
+        DEFAULT_WIFI_SSID,
+        DEFAULT_WIFI_PASSWORD,
+    });
+
+    Serial.println("set up wifi settings");
+
+    wl_status_t result;
+    if (!controller.ConnectWiFi(result, 60000UL)) {
         Serial.printf("WiFi Failed!\n");
         return;
     }
+
+    Serial.println("connected");
 
     // attach AsyncWebSocket
     ws.onEvent(onEvent);
