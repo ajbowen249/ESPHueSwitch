@@ -9,8 +9,8 @@ class WiFiControllerImpl : public IWiFiController {
   public:
     WiFiControllerImpl();
 
-    virtual bool ConnectWiFi(wl_status_t& result, unsigned long timeoutLength) override;
-    void StartAccessPoint();
+    virtual bool connectWiFi(wl_status_t& result, unsigned long timeoutLength) override;
+    void startAccessPoint();
 
     virtual const WiFiSettings& getWiFiSettings() const override;
     virtual void setWiFiSettings(const WiFiSettings& settings) override;

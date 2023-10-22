@@ -19,7 +19,7 @@ void EHS::WiFiControllerImpl::setWiFiSettings(const EHS::WiFiSettings& settings)
 
 const EHS::WiFiStatus& EHS::WiFiControllerImpl::getWiFiStatus() const { return _status; }
 
-bool EHS::WiFiControllerImpl::ConnectWiFi(wl_status_t& result, unsigned long timeoutLength) {
+bool EHS::WiFiControllerImpl::connectWiFi(wl_status_t& result, unsigned long timeoutLength) {
     if (_wifiSettings.ssid != "" && _wifiSettings.password != "") {
         _connectWiFi = true;
         applySettings();
@@ -42,7 +42,7 @@ bool EHS::WiFiControllerImpl::ConnectWiFi(wl_status_t& result, unsigned long tim
     return _status.isConnected;
 }
 
-void EHS::WiFiControllerImpl::StartAccessPoint() {
+void EHS::WiFiControllerImpl::startAccessPoint() {
     _useAccessPoint = true;
     applySettings();
     IPAddress local_IP(192, 168, 4, 1);
@@ -71,7 +71,7 @@ void EHS::WiFiControllerImpl::flagReconnect() {
 void EHS::WiFiControllerImpl::loop() {
     if (_shouldReconnect) {
         wl_status_t result;
-        ConnectWiFi(result, 60000UL);
+        connectWiFi(result, 60000UL);
         _shouldReconnect = false;
     }
 }

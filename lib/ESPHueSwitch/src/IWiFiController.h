@@ -17,8 +17,8 @@ struct WiFiStatus {
 
 class IWiFiController {
   public:
-    virtual bool ConnectWiFi(wl_status_t& result, unsigned long timeoutLength);
-    virtual void StartAccessPoint();
+    virtual bool connectWiFi(wl_status_t& result, unsigned long timeoutLength);
+    virtual void startAccessPoint();
 
     virtual const WiFiSettings& getWiFiSettings() const;
     virtual void setWiFiSettings(const WiFiSettings& settings);

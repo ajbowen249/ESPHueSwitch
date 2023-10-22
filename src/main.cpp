@@ -28,14 +28,14 @@ void setup() {
     Serial.println("set up wifi settings");
 
     wl_status_t result;
-    if (!wifiController->ConnectWiFi(result, 60000UL)) {
+    if (!wifiController->connectWiFi(result, 60000UL)) {
         Serial.printf("WiFi Failed!\n");
     } else {
         Serial.println("connected wifi");
     }
 
     Serial.println("about to start AP...");
-    wifiController->StartAccessPoint();
+    wifiController->startAccessPoint();
     Serial.println("started access point");
 
     configurationServer.start();
