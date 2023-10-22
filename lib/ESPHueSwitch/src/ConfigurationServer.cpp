@@ -12,12 +12,35 @@ const char* index_html = R"""(
     <body>
         <h1>Hue Switch Config</h1>
 
-        <h2>WiFi</h2>
+        <h2>Status</h2>
+        <h3>WiFi</h3>
+        Status: %s<br />
         SSID: %s<br />
-        Status: %s<br /><br />
-        Set WiFi Credentials:<br />
 
-        <form action="/update_wifi.html" method="get">
+        <h2>Setup</h2>
+
+        <ul>
+            <li><a href="/update_wifi.html">WiFi Setup</a></li>
+        </ul>
+    </body>
+</html>
+)""";
+
+
+const char* update_wifi_html = R"""(
+<html>
+    <head>
+        <title>
+            Hue Switch Config
+        </title>
+    </head>
+    <body>
+        <h1>WiFi Setup</h1>
+        Status: %s<br />
+        SSID: %s<br /><br />
+
+        Set WiFi Credentials:<br />
+        <form action="/update_wifi_result.html" method="get">
             <label for="ssid">SSID: </label>
             <input id="ssid" name="ssid" type="text" /><br />
 
@@ -30,7 +53,7 @@ const char* index_html = R"""(
 </html>
 )""";
 
-const char* update_wifi_html = R"""(
+const char* update_wifi_result_html = R"""(
 <html>
     <head>
         <title>
@@ -95,10 +118,30 @@ void EHS::ConfigurationServer::start() {
             "text/html",
             response_buffer
         );
+
         request->send(response);
     });
 
     _server.on("/update_wifi.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
+        const auto wifiStatus = wifiController->getWiFiStatus();
+        const auto wifiSettings = wifiController->getWiFiSettings();
+
+        snprintf(
+            response_buffer, RESPONSE_BUFFER_SIZE, update_wifi_html,
+            wifiSettings.ssid.c_str(),
+            wifiStatus.isConnected ? "Connected" : "Not Connected"
+        );
+
+        AsyncWebServerResponse* response = request->beginResponse(
+            200,
+            "text/html",
+            response_buffer
+        );
+
+        request->send(response);
+    });
+
+    _server.on("/update_wifi_result.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
         if (!request->hasParam(QUERY_SSID) || !request->hasParam(QUERY_PASSWORD)) {
             Serial.println("rejecting for params");
             AsyncWebServerResponse* response = request->beginResponse(
@@ -115,7 +158,7 @@ void EHS::ConfigurationServer::start() {
         AsyncWebServerResponse* response = request->beginResponse(
             200,
             "text/html",
-            update_wifi_html
+            update_wifi_result_html
         );
 
         request->send(response);
