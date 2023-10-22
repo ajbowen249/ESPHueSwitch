@@ -15,10 +15,14 @@ class HueControllerImpl : public IHueController {
 
     virtual const std::string& getUserId() const override;
     virtual bool setUpUserId() override;
+    virtual void flagUserIdSetup() override;
+
+    virtual void loop() override;
 
   private:
     std::string _ip;
     HueItemId _item;
     std::string _userId;
+    bool _shouldSetUpUser;
 };
 } // namespace EHS

@@ -44,5 +44,6 @@ void setup() {
 
 void loop() {
     supportObjects.getWiFiController()->loop();
+    supportObjects.getHueController()->loop();
     yield();
 }

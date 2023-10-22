@@ -19,5 +19,8 @@ class IHueController {
 
     virtual const std::string& getUserId() const;
     virtual bool setUpUserId();
+    virtual void flagUserIdSetup();
+
+    virtual void loop();
 };
 } // namespace EHS

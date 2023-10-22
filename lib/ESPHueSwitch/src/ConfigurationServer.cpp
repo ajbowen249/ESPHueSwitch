@@ -4,118 +4,127 @@
 
 const char* index_html = R"""(
 <html>
-    <head>
-        <title>
-            Hue Switch Config
-        </title>
-    </head>
-    <body>
-        <h1>Hue Switch Config</h1>
+  <head>
+    <title>
+      Hue Switch Config
+    </title>
+  </head>
+  <body>
+    <h1>Hue Switch Config</h1>
 
-        <h2>Status</h2>
+    <h2>Status</h2>
 
-        <h3>WiFi</h3>
-        Status: %s<br />
-        SSID: %s<br />
+    <h3>WiFi</h3>
+    Status: %s<br />
+    SSID: %s<br />
 
-        <h3>Hue</h3>
-        IP: %s<br />
-        User ID: %s<br />
-        Item: %s<br />
+    <h3>Hue</h3>
+    IP: %s<br />
+    User ID: %s<br />
+    Item: %s<br />
 
-        <h2>Setup</h2>
-        <ul>
-            <li><a href="/update_wifi.html">WiFi Setup</a></li>
-            <li><a href="/hue_setup.html">Hue Setup</a></li>
-        </ul>
-    </body>
+    <h2>Setup</h2>
+    <ul>
+      <li><a href="/update_wifi.html">WiFi Setup</a></li>
+      <li><a href="/hue_setup.html">Hue Setup</a></li>
+    </ul>
+  </body>
 </html>
 )""";
-
 
 const char* update_wifi_html = R"""(
 <html>
-    <head>
-        <title>
-            Hue Switch Config
-        </title>
-    </head>
-    <body>
-        <h1>WiFi Setup</h1>
-        Status: %s<br />
-        SSID: %s<br /><br />
+  <head>
+    <title>
+      Hue Switch Config
+    </title>
+  </head>
+  <body>
+    <h1>WiFi Setup</h1>
+    Status: %s<br />
+    SSID: %s<br /><br />
 
-        Set WiFi Credentials:<br />
-        <form action="/update_wifi_result.html" method="get">
-            <label for="ssid">SSID: </label>
-            <input id="ssid" name="ssid" type="text" /><br />
+    Set WiFi Credentials:<br />
+    <form action="/update_wifi_result.html" method="get">
+      <label for="ssid">SSID: </label>
+      <input id="ssid" name="ssid" type="text" /><br />
 
-            <label for="password">Password: </label>
-            <input id="password" name="password" type="password" /><br />
+      <label for="password">Password: </label>
+      <input id="password" name="password" type="password" /><br />
 
-            <button type="submit" formmethod="get">Update</button>
-        </form>
-    </body>
+      <button type="submit" formmethod="get">Update</button>
+    </form>
+  </body>
 </html>
 )""";
 
-const char* update_wifi_result_html = R"""(
+const char* wait_and_redirect_html = R"""(
 <html>
-    <head>
-        <title>
-            Hue Switch Config
-        </title>
-        <script type="application/javascript">
-            function onLoad() {
-                setTimeout(() => {
-                    window.location.pathname = '/';
-                }, 10000);
-            }
-        </script>
-    </head>
-    <body onload="onLoad();">
-        <h1>Updating WiFi...</h1>
-        Applying WiFi settings. You should be redirected momentarily.
-    </body>
+  <head>
+  <title>
+  Hue Switch Config
+  </title>
+  <script type="application/javascript">
+  function onLoad() {
+  setTimeout(() => {
+    window.location.pathname = '/';
+  }, 10000);
+  }
+  </script>
+  </head>
+  <body onload="onLoad();">
+  <h1>Updating...</h1>
+  Applying settings. You should be redirected momentarily.
+  </body>
 </html>
 )""";
 
 const char* hue_setup_html = R"""(
 <html>
-    <head>
-        <title>
-            Hue Switch Config
-        </title>
-    </head>
-    <body>
-        <h1>Hue Setup</h1>
-        %s<br />
+  <head>
+    <title>
+      Hue Switch Config
+    </title>
+  </head>
+  <body>
+    <h1>Hue Setup</h1>
+    %s<br />
 
-        IP: %s<br />
-        User ID: %s<br />
-        Item: %s<br />
+    IP: %s<br />
+    User ID: %s<br />
+    Item: %s<br /><br />
 
-        Set IP:<br />
-        <form action="/set_hue_ip.html" method="get">
-            <label for="ip">IP: </label>
-            <input id="ip" name="ip" type="text" /><br />
+    Set IP (can be found in Hue app):<br />
+    <form action="/set_hue_ip.html" method="get">
+      <label for="ip">IP: </label>
+      <input id="ip" name="ip" type="text" /><br />
 
-            <button type="submit" formmethod="get">Set</button>
-        </form>
-    </body>
+      <button type="submit" formmethod="get">Set</button>
+    </form>
+
+    <form action="/get_user_id.html" method="get">
+      Set up User ID
+      <ol>
+        <li>Set an IP address</li>
+        <li>Tap button on Hue Bridge</li>
+        <li>Press this button</li>
+      </ol>
+      <button type="submit" formmethod="get">Set Up User ID</button>
+    </form>
+  </body>
 </html>
 )""";
 
 const char* error_html = R"""(
 <html>
-    <head>
-        <title>
-            Hue Switch Config
-        </title>
-    </head>
-    <body>
-        An unknown error has occurred.
-    </body>
+  <head>
+    <title>
+      Hue Switch Config
+    </title>
+  </head>
+  <body>
+    An unknown error has occurred.
+  </body>
 </html>
 )""";
 
@@ -180,7 +189,6 @@ void EHS::ConfigurationServer::start() {
 
     _server.on("/update_wifi_result.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
         if (!request->hasParam(QUERY_SSID) || !request->hasParam(QUERY_PASSWORD)) {
-            Serial.println("rejecting for params");
             AsyncWebServerResponse* response = request->beginResponse(
                 200,
                 "text/html",
@@ -191,30 +199,22 @@ void EHS::ConfigurationServer::start() {
             return;
         }
 
-        Serial.println("responding...");
         AsyncWebServerResponse* response = request->beginResponse(
             200,
             "text/html",
-            update_wifi_result_html
+            wait_and_redirect_html
         );
 
         request->send(response);
 
-        Serial.println("about to get param values");
         const auto ssidParam = request->getParam(QUERY_SSID);
         const auto passwordParam = request->getParam(QUERY_PASSWORD);
 
-        Serial.println("got values");
-        Serial.println(ssidParam->value().c_str());
-        Serial.println(passwordParam->value().c_str());
-
-        Serial.println("about to set values...");
         wifiController->setWiFiSettings({
             ssidParam->value().c_str(),
             passwordParam->value().c_str(),
         });
 
-        Serial.println("flagging wifi reconnect...");
         wifiController->flagReconnect();
     });
 
@@ -261,6 +261,36 @@ void EHS::ConfigurationServer::start() {
         );
 
         request->send(response);
+    });
+
+    _server.on("/get_user_id.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
+        if (hueController->getIP() == "") {
+            snprintf(
+                response_buffer, RESPONSE_BUFFER_SIZE, hue_setup_html,
+                "error: no IP address set",
+                hueController->getIP().c_str(),
+                hueController->getUserId().c_str(),
+                hueController->getItem().id.c_str()
+            );
+
+            AsyncWebServerResponse* response = request->beginResponse(
+                200,
+                "text/html",
+                response_buffer
+            );
+
+            request->send(response);
+        } else {
+            hueController->flagUserIdSetup();
+
+            AsyncWebServerResponse* response = request->beginResponse(
+                200,
+                "text/html",
+                wait_and_redirect_html
+            );
+
+            request->send(response);
+        }
     });
 
     _server.onNotFound(onUnhandledRequest);

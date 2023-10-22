@@ -1,9 +1,10 @@
 #include "HueControllerImpl.h"
+#include "HardwareSerial.h"
 
 #define DEFAULT_IP "10.0.0.191"
 #define DEFAULT_USERID ""
 
-EHS::HueControllerImpl::HueControllerImpl() : _ip(DEFAULT_IP), _item({ "", false }), _userId(DEFAULT_USERID) {}
+EHS::HueControllerImpl::HueControllerImpl() : _ip(DEFAULT_IP), _item({ "", false }), _userId(DEFAULT_USERID), _shouldSetUpUser(false) {}
 
 const std::string& EHS::HueControllerImpl::getIP() const {
     return _ip;
@@ -26,5 +27,17 @@ const std::string& EHS::HueControllerImpl::getUserId() const {
 }
 
 bool EHS::HueControllerImpl::setUpUserId() {
+    Serial.println("setting up user ID");
     return false;
+}
+
+void EHS::HueControllerImpl::flagUserIdSetup() {
+    _shouldSetUpUser = true;
+}
+
+void EHS::HueControllerImpl::loop() {
+    if (_shouldSetUpUser) {
+        _shouldSetUpUser = false;
+        setUpUserId();
+    }
 }
