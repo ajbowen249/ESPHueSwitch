@@ -12,8 +12,6 @@
 
 char urlBuffer[1024];
 
-const char* urlTemplate = "http://%s/api/%s/%s";
-
 EHS::HueControllerImpl::HueControllerImpl() : _ip(DEFAULT_IP), _item(DEFAULT_ITEM), _userId(DEFAULT_USERID), _shouldSetUpUser(false), _shouldToggle(false) {}
 
 const std::string& EHS::HueControllerImpl::getIP() const {
@@ -41,19 +39,12 @@ bool EHS::HueControllerImpl::setUpUserId() {
     WiFiClient client;
     HTTPClient http;
 
-    Serial.println("setting up user ID");
-
     if (_ip == "") {
         return false;
     }
 
-    Serial.println("about to write URL");
     sprintf(urlBuffer, "http://%s/api", _ip.c_str());
-    Serial.println(urlBuffer);
-
-    Serial.println("about to begin");
     http.begin(client, urlBuffer);
-    Serial.println("about to post");
 
     bool success = false;
     const auto response = http.POST("{\"devicetype\" : \"hue_switch#hue_switch hue_switch\"}");
@@ -69,7 +60,6 @@ bool EHS::HueControllerImpl::setUpUserId() {
             Serial.println(deserializeError.c_str());
             success = false;
         } else {
-            // Responses are wrapped in an outer array from Hue, even when it's a single thing
             /*
             [
                 {
@@ -116,7 +106,49 @@ bool EHS::HueControllerImpl::setUpUserId() {
 }
 
 void EHS::HueControllerImpl::toggle() {
-    Serial.println("Toggle test in hue controller.");
+    setItemOn(!isItemOn());
+}
+
+void EHS::HueControllerImpl::setItemOn(bool isOn) {
+    char bodyBuffer[20];
+    WiFiClient client;
+    HTTPClient http;
+
+    if (_ip == "" || _userId == "" || _item.id == "" || _item.isLight) {
+        return;
+    }
+
+    sprintf(urlBuffer, "http://%s/api/%s/groups/%s/action", _ip.c_str(), _userId.c_str(), _item.id.c_str());
+    http.begin(client, urlBuffer);
+
+    // Eh, we have JSON, but why bother for this?
+    sprintf(bodyBuffer, "{\"on\":%s}", isOn ? "true" : "false");
+    http.PUT(bodyBuffer);
+}
+
+bool EHS::HueControllerImpl::isItemOn() {
+    StaticJsonDocument<2048> json;
+    WiFiClient client;
+    HTTPClient http;
+
+    if (_ip == "" || _userId == "" || _item.id == "" || _item.isLight) {
+        return false;
+    }
+
+    sprintf(urlBuffer, "http://%s/api/%s/groups/%s", _ip.c_str(), _userId.c_str(), _item.id.c_str());
+    http.begin(client, urlBuffer);
+
+    const auto response = http.GET();
+
+    if (response > 0) {
+        const auto payload = http.getString();
+        const auto deserializeError = deserializeJson(json, payload);
+        if (!deserializeError) {
+            return json["state"]["any_on"];
+        }
+    }
+
+    return false;
 }
 
 void EHS::HueControllerImpl::flagUserIdSetup() {

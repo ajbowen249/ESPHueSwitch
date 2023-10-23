@@ -29,5 +29,7 @@ class HueControllerImpl : public IHueController {
     bool _shouldToggle;
 
     void toggle();
+    bool isItemOn();
+    void setItemOn(bool isOn);
 };
 } // namespace EHS
