@@ -21,6 +21,8 @@ class IHueController {
     virtual bool setUpUserId();
     virtual void flagUserIdSetup();
 
+    virtual void flagToggle();
+
     virtual void loop();
 };
 } // namespace EHS

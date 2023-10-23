@@ -27,6 +27,7 @@ const char* index_html = R"""(
     <ul>
       <li><a href="/update_wifi.html">WiFi Setup</a></li>
       <li><a href="/hue_setup.html">Hue Setup</a></li>
+      <li><a href="/hue_test.html">Hue Test</a></li>
     </ul>
   </body>
 </html>
@@ -122,6 +123,25 @@ const char* hue_setup_html = R"""(
 
       <button type="submit" formmethod="get">Set Item</button>
     </form>
+  </body>
+</html>
+)""";
+
+const char* hue_test_html = R"""(
+<html>
+  <head>
+    <title>
+      Hue Switch Config
+    </title>
+    <script type="application/javascript">
+      function toggle() {
+        fetch(window.location.origin + "/hue_toggle", { method: 'POST' });
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Hue Tester</h1>
+    <button onclick="toggle();">Toggle</button>
   </body>
 </html>
 )""";
@@ -273,6 +293,16 @@ void EHS::ConfigurationServer::start() {
         AsyncWebServerResponse* response = request->beginResponse(200, "text/html", response_buffer);
 
         request->send(response);
+    });
+
+    _server.on("/hue_test.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
+        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", hue_test_html);
+        request->send(response);
+    });
+
+    _server.on("/hue_toggle", HTTP_POST, [=](AsyncWebServerRequest* request) {
+        hueController->flagToggle();
+        request->send(200);
     });
 
     _server.onNotFound(onUnhandledRequest);

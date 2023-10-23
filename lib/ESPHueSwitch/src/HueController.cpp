@@ -14,7 +14,7 @@ char urlBuffer[1024];
 
 const char* urlTemplate = "http://%s/api/%s/%s";
 
-EHS::HueControllerImpl::HueControllerImpl() : _ip(DEFAULT_IP), _item(DEFAULT_ITEM), _userId(DEFAULT_USERID), _shouldSetUpUser(false) {}
+EHS::HueControllerImpl::HueControllerImpl() : _ip(DEFAULT_IP), _item(DEFAULT_ITEM), _userId(DEFAULT_USERID), _shouldSetUpUser(false), _shouldToggle(false) {}
 
 const std::string& EHS::HueControllerImpl::getIP() const {
     return _ip;
@@ -115,13 +115,26 @@ bool EHS::HueControllerImpl::setUpUserId() {
     return success;
 }
 
+void EHS::HueControllerImpl::toggle() {
+    Serial.println("Toggle test in hue controller.");
+}
+
 void EHS::HueControllerImpl::flagUserIdSetup() {
     _shouldSetUpUser = true;
+}
+
+void EHS::HueControllerImpl::flagToggle() {
+    _shouldToggle = true;
 }
 
 void EHS::HueControllerImpl::loop() {
     if (_shouldSetUpUser) {
         _shouldSetUpUser = false;
         setUpUserId();
+    }
+
+    if (_shouldToggle) {
+        _shouldToggle = false;
+        toggle();
     }
 }

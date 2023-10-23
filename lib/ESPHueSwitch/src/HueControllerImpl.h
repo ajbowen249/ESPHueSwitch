@@ -17,6 +17,8 @@ class HueControllerImpl : public IHueController {
     virtual bool setUpUserId() override;
     virtual void flagUserIdSetup() override;
 
+    virtual void flagToggle() override;
+
     virtual void loop() override;
 
   private:
@@ -24,5 +26,8 @@ class HueControllerImpl : public IHueController {
     HueItemId _item;
     std::string _userId;
     bool _shouldSetUpUser;
+    bool _shouldToggle;
+
+    void toggle();
 };
 } // namespace EHS
