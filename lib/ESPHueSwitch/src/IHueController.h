@@ -6,7 +6,7 @@ namespace EHS {
 // Can Id either a light or a group
 struct HueItemId {
     std::string id;
-    bool isGroup;
+    bool isLight;
 };
 
 class IHueController {

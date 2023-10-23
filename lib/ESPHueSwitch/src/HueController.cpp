@@ -8,12 +8,13 @@
 
 #define DEFAULT_IP "10.0.0.191"
 #define DEFAULT_USERID "Sb-7VtRtDKI4PUdvOO7WtsqR356Xehr3-HZndOK1"
+#define DEFAULT_ITEM { "1", false }
 
 char urlBuffer[1024];
 
 const char* urlTemplate = "http://%s/api/%s/%s";
 
-EHS::HueControllerImpl::HueControllerImpl() : _ip(DEFAULT_IP), _item({ "", false }), _userId(DEFAULT_USERID), _shouldSetUpUser(false) {}
+EHS::HueControllerImpl::HueControllerImpl() : _ip(DEFAULT_IP), _item(DEFAULT_ITEM), _userId(DEFAULT_USERID), _shouldSetUpUser(false) {}
 
 const std::string& EHS::HueControllerImpl::getIP() const {
     return _ip;
