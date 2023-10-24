@@ -1,10 +1,10 @@
 #include "ESP8266WiFi.h"
 #include "WiFiControllerImpl.h"
 
-#define HOSTNAME "HueSwitch"
-
 #define AP_NAME "HueSwitch"
 #define AP_PASS "admin1234"
+
+#include <sstream>
 
 EHS::WiFiControllerImpl::WiFiControllerImpl()
     : _status({false, WL_IDLE_STATUS}), _wifiSettings({"", ""}), _useAccessPoint(false), _connectWiFi(false),
@@ -61,7 +61,8 @@ void EHS::WiFiControllerImpl::applySettings() {
         WiFi.mode(WIFI_STA);
     }
 
-    WiFi.hostname(HOSTNAME);
+    std::stringstream hostnameSS;
+    hostnameSS << "HueSwitch_" << WiFi.macAddress().c_str();
 }
 
 void EHS::WiFiControllerImpl::flagReconnect() {
