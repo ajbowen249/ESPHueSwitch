@@ -44,8 +44,8 @@ const char* update_wifi_html = R"""(
   </head>
   <body>
     <h1>WiFi Setup</h1>
-    Status: %s<br />
-    SSID: %s<br /><br />
+    Status: %WIFI_STATUS%<br />
+    SSID: %WIFI_SSID%<br />
 
     Set WiFi Credentials:<br />
     <form action="/update_wifi_result.html" method="get">
@@ -91,11 +91,11 @@ const char* hue_setup_html = R"""(
   </head>
   <body>
     <h1>Hue Setup</h1>
-    %s<br />
+    %BANNER_TEXT%<br />
 
-    IP: %s<br />
-    User ID: %s<br />
-    Item: %s<br /><br />
+    IP: %HUE_IP%<br />
+    User ID: %HUE_USER_ID%<br />
+    Item: %HUE_ITEM_FULL%<br />
 
     Set IP (can be found in Hue app):<br />
     <form action="/set_hue_ip.html" method="get">
@@ -161,9 +161,6 @@ const char* error_html = R"""(
 </html>
 )""";
 
-#define RESPONSE_BUFFER_SIZE 2048
-char response_buffer[RESPONSE_BUFFER_SIZE];
-
 #define QUERY_SSID "ssid"
 #define QUERY_PASSWORD "password"
 #define QUERY_IP "ip"
@@ -174,16 +171,6 @@ void onUnhandledRequest(AsyncWebServerRequest* request) { request->send(404); }
 
 EHS::ConfigurationServer::ConfigurationServer(EHS::ISupportObjectBundle* supportObjects)
     : _supportObjects(supportObjects), _server(PORT) {}
-
-void renderHueSetup(EHS::IHueController* hueController, const char* banner) {
-    snprintf(
-        response_buffer, RESPONSE_BUFFER_SIZE, hue_setup_html,
-        banner,
-        hueController->getIP().c_str(),
-        hueController->getUserId().c_str(),
-        hueController->getItem().id.c_str()
-    );
-}
 
 void EHS::ConfigurationServer::start() {
     _server.reset();
@@ -223,28 +210,16 @@ void EHS::ConfigurationServer::start() {
     });
 
     _server.on("/update_wifi.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
-        const auto wifiStatus = wifiController->getWiFiStatus();
-        const auto wifiSettings = wifiController->getWiFiSettings();
-
-        snprintf(response_buffer, RESPONSE_BUFFER_SIZE, update_wifi_html, wifiSettings.ssid.c_str(),
-                 wifiStatus.isConnected ? "Connected" : "Not Connected");
-
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", response_buffer);
-
-        request->send(response);
+        request->send_P(200, "text/html", update_wifi_html, getTemplateVar);
     });
 
     _server.on("/update_wifi_result.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
         if (!request->hasParam(QUERY_SSID) || !request->hasParam(QUERY_PASSWORD)) {
-            AsyncWebServerResponse* response = request->beginResponse(200, "text/html", error_html);
-
-            request->send(response);
+            request->send_P(400, "text/html", error_html);
             return;
         }
 
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", wait_and_redirect_html);
-
-        request->send(response);
+        request->send_P(200, "text/html", wait_and_redirect_html);
 
         const auto ssidParam = request->getParam(QUERY_SSID);
         const auto passwordParam = request->getParam(QUERY_PASSWORD);
@@ -258,14 +233,17 @@ void EHS::ConfigurationServer::start() {
     });
 
     _server.on("/hue_setup.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
-        renderHueSetup(hueController, "");
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", response_buffer);
+        request->send_P(200, "text/html", hue_setup_html, [=](const String& varName) {
+            if (varName == "BANNER_TEXT") {
+                return String("");
+            }
 
-        request->send(response);
+            return getTemplateVar(varName);
+        });
     });
 
     _server.on("/set_hue_ip.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
-        std::string banner = "";
+        String banner = "";
 
         if (request->hasParam(QUERY_IP)) {
             banner = "IP updated!";
@@ -274,28 +252,32 @@ void EHS::ConfigurationServer::start() {
             banner = "Bad request!";
         }
 
-        renderHueSetup(hueController, banner.c_str());
+        request->send_P(200, "text/html", hue_setup_html, [=](const String& varName) {
+            if (varName == "BANNER_TEXT") {
+                return banner;
+            }
 
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", response_buffer);
-
-        request->send(response);
+            return getTemplateVar(varName);
+        });
     });
 
     _server.on("/get_user_id.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
         if (hueController->getIP() == "") {
-            renderHueSetup(hueController, "error: no IP address set");
-            AsyncWebServerResponse* response = request->beginResponse(200, "text/html", response_buffer);
-            request->send(response);
+            request->send_P(200, "text/html", hue_setup_html, [=](const String& varName) {
+                if (varName == "BANNER_TEXT") {
+                    return String("error: no IP address set");
+                }
+
+                return getTemplateVar(varName);
+            });
         } else {
             hueController->flagUserIdSetup();
-
-            AsyncWebServerResponse* response = request->beginResponse(200, "text/html", wait_and_redirect_html);
-            request->send(response);
+            request->send_P(200, "text/html", wait_and_redirect_html);
         }
     });
 
     _server.on("/set_item.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
-        std::string banner = "";
+        String banner = "";
 
         if (request->hasParam(QUERY_ID)) {
             banner = "Item updated!";
@@ -304,15 +286,17 @@ void EHS::ConfigurationServer::start() {
             banner = "Bad request!";
         }
 
-        renderHueSetup(hueController, banner.c_str());
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", response_buffer);
+        request->send_P(200, "text/html", hue_setup_html, [=](const String& varName) {
+            if (varName == "BANNER_TEXT") {
+                return banner;
+            }
 
-        request->send(response);
+            return getTemplateVar(varName);
+        });
     });
 
     _server.on("/hue_test.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", hue_test_html);
-        request->send(response);
+        request->send_P(200, "text/html", hue_test_html);
     });
 
     _server.on("/hue_toggle", HTTP_POST, [=](AsyncWebServerRequest* request) {
