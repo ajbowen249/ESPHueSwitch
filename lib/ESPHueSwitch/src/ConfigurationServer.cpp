@@ -1,5 +1,7 @@
 #include "ConfigurationServer.h"
 
+#include <sstream>
+
 #define PORT 80
 
 const char* index_html = R"""(
@@ -15,13 +17,13 @@ const char* index_html = R"""(
     <h2>Status</h2>
 
     <h3>WiFi</h3>
-    Status: %s<br />
-    SSID: %s<br />
+    Status: %WIFI_STATUS%<br />
+    SSID: %WIFI_SSID%<br />
 
     <h3>Hue</h3>
-    IP: %s<br />
-    User ID: %s<br />
-    Item: %s<br />
+    IP: %HUE_IP%<br />
+    User ID: %HUE_USER_ID%<br />
+    Item: %HUE_ITEM_FULL%<br />
 
     <h2>Setup</h2>
     <ul>
@@ -189,22 +191,35 @@ void EHS::ConfigurationServer::start() {
     const auto wifiController = _supportObjects->getWiFiController();
     const auto hueController = _supportObjects->getHueController();
 
+    auto getTemplateVar = [=](const String& varName) {
+        if (varName == "WIFI_STATUS") {
+            return String(wifiController->getWiFiStatus().isConnected ? "Connected" : "Not Connected");
+        }
+
+        if (varName == "WIFI_SSID") {
+            return String(wifiController->getWiFiSettings().ssid.c_str());
+        }
+
+        if (varName == "HUE_IP") {
+            return String(hueController->getIP().c_str());
+        }
+
+        if (varName == "HUE_USER_ID") {
+            return String(hueController->getUserId().c_str());
+        }
+
+        if (varName == "HUE_ITEM_FULL") {
+            std::stringstream hueItemSS;
+            const auto item = hueController->getItem();
+            hueItemSS << (item.isLight ? "Light " : "Group ") << item.id;
+            return String(hueItemSS.str().c_str());
+        }
+
+        return varName;
+    };
+
     _server.on("/", HTTP_GET, [=](AsyncWebServerRequest* request) {
-        const auto wifiStatus = wifiController->getWiFiStatus();
-        const auto wifiSettings = wifiController->getWiFiSettings();
-
-        snprintf(
-            response_buffer, RESPONSE_BUFFER_SIZE, index_html,
-            wifiSettings.ssid.c_str(),
-            wifiStatus.isConnected ? "Connected" : "Not Connected",
-            hueController->getIP().c_str(),
-            hueController->getUserId().c_str(),
-            hueController->getItem().id.c_str()
-        );
-
-        AsyncWebServerResponse* response = request->beginResponse(200, "text/html", response_buffer);
-
-        request->send(response);
+        request->send_P(200, "text/html", index_html, getTemplateVar);
     });
 
     _server.on("/update_wifi.html", HTTP_GET, [=](AsyncWebServerRequest* request) {
