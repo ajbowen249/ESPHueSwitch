@@ -57,9 +57,33 @@ void setup() {
     digitalWrite(2, LOW);
 }
 
+bool wasButtonPressed = false;
+int pressedCount = 0;
+
 void loop() {
     supportObjects.getWiFiController()->loop();
     supportObjects.getHueController()->loop();
     yield();
+
+    bool isButtonPressed = !digitalRead(0);
+
+    if (isButtonPressed && !wasButtonPressed) {
+        wasButtonPressed = true;
+        pressedCount++;
+    } else if (isButtonPressed && wasButtonPressed) {
+        pressedCount++;
+    } else if (!isButtonPressed) {
+        wasButtonPressed = false;
+    }
+
+    if (pressedCount > 50 && !wasButtonPressed) {
+        Serial.println("Request toggle");
+        supportObjects.getHueController()->flagToggle();
+    }
+
+    if (!isButtonPressed) {
+        pressedCount = 0;
+    }
+
     digitalWrite(2, !digitalRead(0));
 }
