@@ -10,11 +10,22 @@ EHS::SupportObjectBundleImpl supportObjects;
 EHS::ConfigurationServer configurationServer(&supportObjects);
 
 void setup() {
+    pinMode(2, OUTPUT);
+    pinMode(0, INPUT_PULLUP);
+    digitalWrite(2, LOW);
+
     Serial.begin(115200);
 
     delay(1000);
     Serial.println("start delay...");
-    delay(5000);
+
+    for (int i = 0; i < 10; i++) {
+        digitalWrite(2, HIGH);
+        delay(250);
+        digitalWrite(2, LOW);
+        delay(250);
+    }
+
     Serial.println("start delay complete");
     Serial.println("about to init controller");
 
@@ -40,10 +51,15 @@ void setup() {
 
     configurationServer.start();
     Serial.println("started server");
+
+    digitalWrite(2, HIGH);
+    delay(1000);
+    digitalWrite(2, LOW);
 }
 
 void loop() {
     supportObjects.getWiFiController()->loop();
     supportObjects.getHueController()->loop();
     yield();
+    digitalWrite(2, !digitalRead(0));
 }
